@@ -180,6 +180,12 @@
     return latPart + ", " + lonPart;
   }
 
+  /* "41.5625" / "-87.7917" -- signed decimal, rounded like formatCoords,
+   * for the copy buttons: the numbers a ham types into another tool. */
+  function signedNum(v) {
+    return (Math.round(v * 10000) / 10000).toFixed(4);
+  }
+
   /* "E N 6 1 C N" -- spaced so a screen reader says each character. */
   function spellGrid(grid) {
     return grid.split("").join(" ");
@@ -298,6 +304,7 @@
     bearingWord: bearingWord,
     formatDistance: formatDistance,
     formatCoords: formatCoords,
+    signedNum: signedNum,
     spellGrid: spellGrid,
     placeLabel: placeLabel,
     nearestPlaces: nearestPlaces,

@@ -6,6 +6,8 @@
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="Accessible grid square locator for amateur radio. Type a Maidenhead grid square and hear the nearest town, or type a town and get its grid square. Built for Visually Inconvenienced Hams." />
     <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="leaflet.css" />
+    <script>try{var t=localStorage.getItem("grid-locator-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}</script>
     <title>Grid Square Locator — Visually Inconvenienced Hams</title>
     <style>
       :root {
@@ -18,6 +20,76 @@
         --panel: #0d0d0d;
         --border: #ffffff;
         --muted: #cccccc;
+        --on-focus: #000000;
+        --on-good: #000000;
+        --on-fair: #000000;
+        --input-bg: #111111;
+        --panel-hover: #1f1f1f;
+        --good-hover: #66ff66;
+        --leaflet-bg: #000000;
+        --leaflet-fg: #ffffff;
+      }
+      /* Light mode follows the device setting, unless the toggle has set
+       * a choice. The bright-on-black palette stays the default. */
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --text: #000000;
+          --good: #007a00;
+          --fair: #7a5200;
+          --poor: #b00000;
+          --focus: #005fcc;
+          --panel: #f5f5f5;
+          --border: #000000;
+          --muted: #555555;
+          --on-focus: #ffffff;
+          --on-good: #ffffff;
+          --on-fair: #ffffff;
+          --input-bg: #ffffff;
+          --panel-hover: #e0e0e0;
+          --good-hover: #005a00;
+          --leaflet-bg: #ffffff;
+          --leaflet-fg: #000000;
+        }
+      }
+      /* A choice from the toggle beats the device setting either way. */
+      :root[data-theme="dark"] {
+        --bg: #000000;
+        --text: #ffffff;
+        --good: #00ff00;
+        --fair: #ffb300;
+        --poor: #ff6666;
+        --focus: #ffff00;
+        --panel: #0d0d0d;
+        --border: #ffffff;
+        --muted: #cccccc;
+        --on-focus: #000000;
+        --on-good: #000000;
+        --on-fair: #000000;
+        --input-bg: #111111;
+        --panel-hover: #1f1f1f;
+        --good-hover: #66ff66;
+        --leaflet-bg: #000000;
+        --leaflet-fg: #ffffff;
+      }
+      :root[data-theme="light"] {
+        --bg: #ffffff;
+        --text: #000000;
+        --good: #007a00;
+        --fair: #7a5200;
+        --poor: #b00000;
+        --focus: #005fcc;
+        --panel: #f5f5f5;
+        --border: #000000;
+        --muted: #555555;
+        --on-focus: #ffffff;
+        --on-good: #ffffff;
+        --on-fair: #ffffff;
+        --input-bg: #ffffff;
+        --panel-hover: #e0e0e0;
+        --good-hover: #005a00;
+        --leaflet-bg: #ffffff;
+        --leaflet-fg: #000000;
       }
       * { box-sizing: border-box; }
       html { font-size: 20px; }
@@ -36,7 +108,7 @@
         left: -9999px;
         top: 0;
         background: var(--focus);
-        color: #000;
+        color: var(--on-focus);
         font-weight: bold;
         padding: 0.75rem 1rem;
         z-index: 10;
@@ -77,7 +149,7 @@
         margin: 1rem 0 0.5rem;
         min-height: 3.5rem;
       }
-      .back-link:hover { background: #1f1f1f; }
+      .back-link:hover { background: var(--panel-hover); }
       button.back-link {
         font: inherit;
         cursor: pointer;
@@ -116,7 +188,7 @@
         font: inherit;
         font-size: 1.4rem;
         color: var(--text);
-        background: #111111;
+        background: var(--input-bg);
         border: 3px solid var(--border);
         margin: 0.25rem 0 0.75rem;
       }
@@ -129,12 +201,12 @@
         font: inherit;
         font-size: 1.35rem;
         font-weight: bold;
-        color: #000;
+        color: var(--on-good);
         background: var(--good);
         border: 3px solid var(--good);
         cursor: pointer;
       }
-      button.action:hover { background: #66ff66; }
+      button.action:hover { background: var(--good-hover); }
       button.action[disabled] { opacity: 0.6; cursor: wait; }
       button.secondary {
         display: block;
@@ -150,7 +222,7 @@
         border: 3px solid var(--fair);
         cursor: pointer;
       }
-      button.secondary:hover { background: #1f1f1f; }
+      button.secondary:hover { background: var(--panel-hover); }
       button.inline-show {
         display: inline-block;
         width: auto;
@@ -160,11 +232,42 @@
         font: inherit;
         font-size: 1.1rem;
         font-weight: bold;
-        color: #000;
+        color: var(--on-good);
         background: var(--good);
         border: 3px solid var(--good);
         cursor: pointer;
       }
+      button.copy-btn {
+        display: inline-block;
+        width: auto;
+        min-height: 2.75rem;
+        margin: 0.5rem 0.5rem 0.25rem 0;
+        padding: 0.5rem 1rem;
+        font: inherit;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: var(--on-fair);
+        background: var(--fair);
+        border: 3px solid var(--fair);
+        cursor: pointer;
+      }
+      .copy-status {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 1.1rem;
+      }
+      #map {
+        height: 420px;
+        width: 100%;
+        border: 3px solid var(--fair);
+        background: var(--bg);
+      }
+      /* Leaflet's own controls follow the page theme. */
+      .leaflet-container { background: var(--bg); font: inherit; }
+      .leaflet-bar a { background: var(--leaflet-bg); color: var(--leaflet-fg); }
+      .leaflet-bar a:hover { background: var(--panel-hover); }
+      .leaflet-control-attribution { background: var(--leaflet-bg); color: var(--muted); }
+      .leaflet-control-attribution a { color: var(--fair); }
 
       .result {
         border: 3px solid var(--good);
@@ -201,6 +304,7 @@
     <a class="skip-link" href="#lookup-grid">Skip to the grid square lookup</a>
     <main class="wrap">
       <h1>Grid Square Locator</h1>
+      <p><button type="button" class="secondary" id="theme-toggle">Switch to light mode</button></p>
 
       <a class="back-link" href="https://m.facebook.com/groups/742838019382868">Back to Visually Inconvenienced Hams on Facebook</a>
       <p class="twin-note">A companion to the Technician License Class and the group. Type a grid square to find the nearest town, or type a town to find its grid square. Everything runs in your browser. No lookup is ever sent anywhere.</p>
@@ -230,6 +334,12 @@
       </form>
       <div id="grid-result" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
 
+      <div id="map-wrap" hidden>
+        <h3>Map (visual)</h3>
+        <p>The outline is the grid square. The dot in the middle is its centre, and the other dot is the nearest named place. Everything on the map is also in the text results above, so nothing here is needed to use the page.</p>
+        <div id="map"></div>
+      </div>
+
       <h2 id="lookup-place">Look up a place</h2>
       <p>Type a town or city to find its grid square. If several places share a name, each result shows its own grid square so you can tell them apart.</p>
       <form id="place-form">
@@ -255,7 +365,8 @@
       <p>Places outside the United States come from <a href="https://www.geonames.org/">GeoNames</a>, used under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 license</a>. This page lists 7,887 of them: cities of 75,000 people or more, plus every national capital.</p>
       <p>Three limits to know. First, outside the United States only larger cities are listed, so in a rural area abroad the nearest named place may be a long way off. The page always says how far it is. Second, a town position is a single centre point from the source data, not the town border, so a place next to a square may show as a few kilometers away. Third, in the ocean or near the poles the nearest named place can be very far away indeed.</p>
       <p>The nearest place is found by measuring from the centre of the square to every place in the list and taking the closest one. The town may not be inside the square. The page says the distance and direction from the centre so that is always clear.</p>
-      <p>Nothing you type leaves your phone or computer. The page loads its place list once from this same site, and every lookup after that happens on your own device.</p>
+      <p>Nothing you type leaves your phone or computer. The page loads its place list once from this same site, and every lookup after that happens on your own device. The visual map is the one exception: it loads its picture tiles from CARTO's servers, which shows CARTO roughly which part of the world the map is showing. No lookup text is sent with the tiles.</p>
+      <p>The page follows your device's light or dark setting, and the button at the top lets you pick either way. That choice is stored on your own device only and is never sent anywhere.</p>
 
       <div class="about">
         <p>Built for Visually Inconvenienced Hams, a Facebook group for blind and visually impaired amateur radio operators.</p>
@@ -263,6 +374,7 @@
       </div>
     </main>
 
+    <script src="leaflet.js"></script>
     <script src="grid.js"></script>
     <script>
 (function () {
@@ -308,7 +420,163 @@
     showResult(box, "<p>" + esc(message) + "</p>", true);
   }
 
+  /* Copy a value to the clipboard, reporting the result in the status
+   * line next to the buttons. Falls back to the old select-and-copy
+   * method where the clipboard API is missing. */
+  function copyText(text, label, status) {
+    function done(ok) {
+      if (status) {
+        status.textContent = ok
+          ? label + " copied: " + text
+          : "Copy did not work. The " + label.toLowerCase() + " is " + text + ".";
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    } else if (typeof document !== "undefined" && document.execCommand) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    } else {
+      done(false);
+    }
+  }
+
+  function wireCopyButtons(box) {
+    var buttons = box.querySelectorAll("button.copy-btn");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", function () {
+        var statusList = box.querySelectorAll(".copy-status");
+        var status = statusList.length > 0 ? statusList[0] : null;
+        copyText(this.getAttribute("data-copy"),
+          this.getAttribute("data-label") || "Value", status);
+      });
+    }
+  }
+
+  /* ---- Light and dark mode ------------------------------------------- */
+  /* The page defaults to the bright-on-black palette. A device set to
+   * light mode gets the light palette automatically, and the toggle
+   * button lets anyone pick either way. The choice is remembered on
+   * this device only. */
+  function systemTheme() {
+    if (typeof window !== "undefined" && window.matchMedia
+      && window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
+    return "dark";
+  }
+
+  function currentTheme() {
+    if (typeof document !== "undefined" && document.documentElement) {
+      var t = document.documentElement.getAttribute("data-theme");
+      if (t === "light" || t === "dark") return t;
+    }
+    return systemTheme();
+  }
+
+  function themeLabel(theme) {
+    return theme === "light" ? "Switch to dark mode" : "Switch to light mode";
+  }
+
+  function tileUrl(theme) {
+    return theme === "light"
+      ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  }
+
+  function mapColors(theme) {
+    if (theme === "light") {
+      return { square: "#007a00", centre: "#7a5200", place: "#000000" };
+    }
+    return { square: "#00ff00", centre: "#ffb300", place: "#ffffff" };
+  }
+
+  function applyTheme(theme, remember) {
+    if (typeof document !== "undefined" && document.documentElement) {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+    var btn = document.getElementById("theme-toggle");
+    if (btn) btn.textContent = themeLabel(theme);
+    if (remember) {
+      try {
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem("grid-locator-theme", theme);
+        }
+      } catch (e) { /* private mode: the choice just is not remembered */ }
+    }
+    if (map && mapTiles && typeof L !== "undefined") {
+      map.removeLayer(mapTiles);
+      mapTiles = L.tileLayer(tileUrl(theme), {
+        attribution: MAP_ATTRIBUTION,
+        subdomains: "abcd",
+        maxZoom: 19
+      }).addTo(map);
+      if (lastMap) drawMapLayers(lastMap.bounds, lastMap.first, lastMap.grid);
+    }
+  }
+
+  var map = null;
+  var mapTiles = null;
+  var mapLayers = null;
+  var lastMap = null;
+  var MAP_ATTRIBUTION = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>";
+
+  function hideMap() {
+    var wrap = document.getElementById("map-wrap");
+    if (wrap) wrap.hidden = true;
+  }
+
+  function drawMapLayers(bounds, first, grid) {
+    if (mapLayers) { map.removeLayer(mapLayers); }
+    var colors = mapColors(currentTheme());
+    var sw = [bounds.swLat, bounds.swLon];
+    var ne = [bounds.neLat, bounds.neLon];
+    var centre = [bounds.centreLat, bounds.centreLon];
+    var layers = [];
+    layers.push(L.rectangle([sw, ne], { color: colors.square, weight: 3, fillOpacity: 0.08 }));
+    var centreMark = L.circleMarker(centre, { radius: 6, color: colors.centre, fillColor: colors.centre, fillOpacity: 1 });
+    centreMark.bindPopup("Centre of " + grid);
+    layers.push(centreMark);
+    if (first && typeof first.lat === "number" && typeof first.lon === "number") {
+      var placeMark = L.circleMarker([first.lat, first.lon], { radius: 6, color: colors.place, fillColor: colors.place, fillOpacity: 1 });
+      placeMark.bindPopup(first.label);
+      layers.push(placeMark);
+    }
+    mapLayers = L.layerGroup(layers);
+    mapLayers.addTo(map);
+  }
+
+  /* Draw the square outline and the nearest place on the visual map.
+   * The map is an extra for sighted and low-vision users; every fact on
+   * it is already in the text results above. Skipped entirely when the
+   * Leaflet code did not load. */
+  function showMap(bounds, first, grid) {
+    var wrap = document.getElementById("map-wrap");
+    if (!wrap) return;
+    if (typeof L === "undefined") { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    if (!map) {
+      map = L.map("map", { scrollWheelZoom: false });
+      mapTiles = L.tileLayer(tileUrl(currentTheme()), {
+        attribution: MAP_ATTRIBUTION,
+        subdomains: "abcd",
+        maxZoom: 19
+      }).addTo(map);
+    }
+    lastMap = { bounds: bounds, first: first, grid: grid };
+    drawMapLayers(bounds, first, grid);
+    map.fitBounds([[bounds.swLat, bounds.swLon], [bounds.neLat, bounds.neLon]], { padding: [24, 24] });
+    setTimeout(function () { map.invalidateSize(); }, 50);
+  }
+
   function lookupGrid(raw) {
+    hideMap();
     if (!PLACES) {
       showError(gridResult, "The place list is still loading. Please wait a moment and try again.");
       return;
@@ -351,10 +619,18 @@
       html += "<li>Also nearby: " + also.join("; ") + ".</li>";
     }
     html += "</ul>";
+    html += '<p class="copy-row">Copy the centre coordinates for another tool: '
+      + '<button type="button" class="copy-btn" data-copy="'
+      + esc(G.signedNum(bounds.centreLat)) + '" data-label="Latitude">Copy latitude</button> '
+      + '<button type="button" class="copy-btn" data-copy="'
+      + esc(G.signedNum(bounds.centreLon)) + '" data-label="Longitude">Copy longitude</button> '
+      + '<span class="copy-status" aria-live="polite"></span></p>';
     if (grid.length === 4) {
       html += "<p>This is a 4-character square. Type the full 6 characters for a smaller square and a closer place.</p>";
     }
     showResult(gridResult, html, false);
+    wireCopyButtons(gridResult);
+    showMap(bounds, first, grid);
   }
 
   function lookupPlace(raw) {
@@ -387,9 +663,16 @@
         + " (4-character grid " + gridHtml(grid4) + ").<br />"
         + "Coordinates " + esc(G.formatCoords(m.lat, m.lon)) + ".<br />"
         + '<button type="button" class="inline-show" data-grid="' + esc(grid6)
-        + '">Show this square</button></li>';
+        + '">Show this square</button> '
+        + '<button type="button" class="copy-btn" data-copy="' + esc(G.signedNum(m.lat))
+        + '" data-label="Latitude" aria-label="Copy latitude for ' + esc(m.label)
+        + '">Copy latitude</button> '
+        + '<button type="button" class="copy-btn" data-copy="' + esc(G.signedNum(m.lon))
+        + '" data-label="Longitude" aria-label="Copy longitude for ' + esc(m.label)
+        + '">Copy longitude</button></li>';
     }
     html += "</ul>";
+    html += '<p><span class="copy-status" aria-live="polite"></span></p>';
     if (matches.length > PLACE_LIMIT) {
       html += "<p>Showing the first " + PLACE_LIMIT
         + " matches. Add a state or country after a comma to narrow it down.</p>";
@@ -404,6 +687,7 @@
         lookupGrid(grid);
       });
     }
+    wireCopyButtons(placeResult);
   }
 
   gridForm.addEventListener("submit", function (event) {
@@ -420,6 +704,32 @@
     gridInput.value = "EN61CN";
     lookupGrid("EN61CN");
   });
+
+  /* Theme toggle: label it for the theme in use, and follow the device
+   * if the user has never picked one. */
+  var themeBtn = $("theme-toggle");
+  if (themeBtn) {
+    themeBtn.textContent = themeLabel(currentTheme());
+    themeBtn.addEventListener("click", function () {
+      applyTheme(currentTheme() === "light" ? "dark" : "light", true);
+    });
+  }
+  if (typeof window !== "undefined" && window.matchMedia) {
+    var lightQuery = window.matchMedia("(prefers-color-scheme: light)");
+    if (lightQuery.addEventListener) {
+      lightQuery.addEventListener("change", function () {
+        var stored = null;
+        try {
+          if (typeof localStorage !== "undefined") {
+            stored = localStorage.getItem("grid-locator-theme");
+          }
+        } catch (e) { stored = null; }
+        if (stored !== "light" && stored !== "dark") {
+          applyTheme(lightQuery.matches ? "light" : "dark", false);
+        }
+      });
+    }
+  }
 
   /* ---- Load the place list (same site, no outside service) ------------ */
   fetch("places.json").then(function (response) {

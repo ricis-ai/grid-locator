@@ -1,15 +1,16 @@
 # Grid Square Locator — Visually Inconvenienced Hams
 
-Status: STAGED FILES ONLY. No GitHub repo has been created, nothing has been deployed, nothing has been posted to Facebook. These files are ready for Nova to deploy to a new public repo `ricis-ai/grid-locator` with GitHub Pages.
+Status: LIVE at https://ricis-ai.github.io/grid-locator/ (repo `ricis-ai/grid-locator`, GitHub Pages). Deployed 2026-11-16.
 
 ## What it is
 
-One static page. A member types a Maidenhead grid square (4 or 6 characters) and the page names the nearest town to the centre of that square, with the distance and direction in plain words. Or a member types a town and the page gives its grid square. Everything runs in the browser: no server, no API key, no cost, no Google services anywhere, and no lookup ever leaves the member's device. The only file the page loads is its own place list, from the same site.
+One static page. A member types a Maidenhead grid square (4 or 6 characters) and the page names the nearest town to the centre of that square, with the distance and direction in plain words. Or a member types a town and the page gives its grid square. Copy buttons on both results copy the signed latitude and longitude for use in another tool. A visual map below the grid result shows the square outline, the centre, and the nearest place, for sighted and low-vision users. The page follows the device's light or dark setting, with a toggle at the top to pick either way; the map tiles and marker colours switch with the theme. Everything runs in the browser: no server, no API key, no cost, no Google services anywhere, and no lookup ever leaves the member's device. The only file the page loads is its own place list, from the same site — except the visual map, whose picture tiles come from CARTO's servers.
 
 ## Files
 
-- `index.html` (22,761 bytes) — the page: two lookup forms, a plain-language "How grid squares work" explainer, and an "About the data" section. Bright-on-black palette from the HamClock/course pages (green #00FF00, amber #FFB300 on black), real headings, labelled fields, aria-live results, focus move to results, grids spelled out for screen readers ("E N 6 1 C N"), coordinates and distances in words, not symbols. Back-to-group links use the HamClock close-button pattern inside Facebook's in-app browser.
-- `grid.js` (16,897 bytes) — Maidenhead math, nearest-place search, place search, and all result wording. No network calls. Also runs under Node for testing.
+- `index.html` — the page: two lookup forms, copy buttons for latitude and longitude on both results, a visual Leaflet map below the grid result, a plain-language "How grid squares work" explainer, and an "About the data" section. Bright-on-black palette from the HamClock/course pages (green #00FF00, amber #FFB300 on black), real headings, labelled fields, aria-live results, focus move to results, grids spelled out for screen readers ("E N 6 1 C N"), coordinates and distances in words, not symbols. Back-to-group links use the HamClock close-button pattern inside Facebook's in-app browser.
+- `grid.js` — Maidenhead math, nearest-place search, place search, and all result wording. No network calls. Also runs under Node for testing.
+- `leaflet.js`, `leaflet.css` — Leaflet 1.9.4 (BSD-2-Clause), vendored from unpkg so the page needs no CDN at runtime. Map tiles come from CARTO's dark tile layer at runtime (see the tile URL in `index.html`); attribution to OpenStreetMap and CARTO is on the map itself.
 - `places.json` (1,498,215 bytes) — 40,237 places as compact arrays. No grids are stored; grids are computed on the fly.
 - `build_places.py` — rebuilds `places.json` from the two source files (see below). Run: `python3 build_places.py <gazetteer.txt> <cities1000.txt> [countryInfo.txt]`.
 - `test_grid.js` — Node tests for the math, the dataset, and the required lookup cases. Run: `node test_grid.js`.
