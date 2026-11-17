@@ -365,7 +365,7 @@
       <p>Places outside the United States come from <a href="https://www.geonames.org/">GeoNames</a>, used under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 license</a>. This page lists 7,887 of them: cities of 75,000 people or more, plus every national capital.</p>
       <p>Three limits to know. First, outside the United States only larger cities are listed, so in a rural area abroad the nearest named place may be a long way off. The page always says how far it is. Second, a town position is a single centre point from the source data, not the town border, so a place next to a square may show as a few kilometers away. Third, in the ocean or near the poles the nearest named place can be very far away indeed.</p>
       <p>The nearest place is found by measuring from the centre of the square to every place in the list and taking the closest one. The town may not be inside the square. The page says the distance and direction from the centre so that is always clear.</p>
-      <p>Nothing you type leaves your phone or computer. The page loads its place list once from this same site, and every lookup after that happens on your own device. The visual map is the one exception: it loads its picture tiles from CARTO's servers, which shows CARTO roughly which part of the world the map is showing. No lookup text is sent with the tiles.</p>
+      <p>Nothing you type leaves your phone or computer. The page loads its place list once from this same site, and every lookup after that happens on your own device. The visual map is the one exception: it loads its picture tiles from Esri's map servers, which shows Esri roughly which part of the world the map is showing. No lookup text is sent with the tiles.</p>
       <p>The page follows your device's light or dark setting, and the button at the top lets you pick either way. That choice is stored on your own device only and is never sent anywhere.</p>
 
       <div class="about">
@@ -484,10 +484,22 @@
     return theme === "light" ? "Switch to dark mode" : "Switch to light mode";
   }
 
-  function tileUrl(theme) {
-    return theme === "light"
-      ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  /* Map tiles: Esri's dark-gray canvas in dark mode, Esri's street map
+   * in light mode. Both are free with no key, and both were checked
+   * visually at two zoom levels. CARTO's basemaps were tried first but
+   * now answer every tile with an "API KEY REQUIRED" watermark, so
+   * they are not used. Attribution is each service's own text. */
+  function tileSpec(theme) {
+    if (theme === "light") {
+      return {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: "Tiles &copy; Esri &mdash; Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, (c) OpenStreetMap contributors, and the GIS User Community"
+      };
+    }
+    return {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, (c) OpenStreetMap contributors, and the GIS user community"
+    };
   }
 
   function mapColors(theme) {
@@ -512,9 +524,9 @@
     }
     if (map && mapTiles && typeof L !== "undefined") {
       map.removeLayer(mapTiles);
-      mapTiles = L.tileLayer(tileUrl(theme), {
-        attribution: MAP_ATTRIBUTION,
-        subdomains: "abcd",
+      var spec = tileSpec(theme);
+      mapTiles = L.tileLayer(spec.url, {
+        attribution: spec.attribution,
         maxZoom: 19
       }).addTo(map);
       if (lastMap) drawMapLayers(lastMap.bounds, lastMap.first, lastMap.grid);
@@ -525,7 +537,6 @@
   var mapTiles = null;
   var mapLayers = null;
   var lastMap = null;
-  var MAP_ATTRIBUTION = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>";
 
   function hideMap() {
     var wrap = document.getElementById("map-wrap");
@@ -563,9 +574,9 @@
     wrap.hidden = false;
     if (!map) {
       map = L.map("map", { scrollWheelZoom: false });
-      mapTiles = L.tileLayer(tileUrl(currentTheme()), {
-        attribution: MAP_ATTRIBUTION,
-        subdomains: "abcd",
+      var spec = tileSpec(currentTheme());
+      mapTiles = L.tileLayer(spec.url, {
+        attribution: spec.attribution,
         maxZoom: 19
       }).addTo(map);
     }
