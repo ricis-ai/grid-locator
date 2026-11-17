@@ -167,12 +167,16 @@
     return formatKm(km) + " kilometers (" + formatMiles(km) + " miles)";
   }
 
-  /* "41.5625 degrees north, 87.7917 degrees west" -- words, not symbols. */
+  /* "41.5625 degrees north, 87.7917 degrees west (-87.7917)" -- the words
+   * carry the sign; the signed number in brackets is shown too, for hams
+   * who copy coordinates into other tools. Positive values need no bracket. */
   function formatCoords(lat, lon) {
-    var latPart = Math.abs(Math.round(lat * 10000) / 10000).toFixed(4)
-      + " degrees " + (lat < 0 ? "south" : "north");
-    var lonPart = Math.abs(Math.round(lon * 10000) / 10000).toFixed(4)
-      + " degrees " + (lon < 0 ? "west" : "east");
+    var latNum = Math.abs(Math.round(lat * 10000) / 10000).toFixed(4);
+    var lonNum = Math.abs(Math.round(lon * 10000) / 10000).toFixed(4);
+    var latPart = latNum + " degrees " + (lat < 0 ? "south" : "north")
+      + (lat < 0 ? " (-" + latNum + ")" : "");
+    var lonPart = lonNum + " degrees " + (lon < 0 ? "west" : "east")
+      + (lon < 0 ? " (-" + lonNum + ")" : "");
     return latPart + ", " + lonPart;
   }
 
