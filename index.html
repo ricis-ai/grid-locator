@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Accessible grid square locator for amateur radio. Type a Maidenhead grid square and hear the nearest town, or type a town and get its grid square. Built for Visually Inconvenienced Hams." />
+    <link rel="icon" href="data:," />
+    <title>Grid Square Locator — Visually Inconvenienced Hams</title>
+    <style>
+      :root {
+        --bg: #000000;
+        --text: #ffffff;
+        --good: #00ff00;
+        --fair: #ffb300;
+        --poor: #ff6666;
+        --focus: #ffff00;
+        --panel: #0d0d0d;
+        --border: #ffffff;
+        --muted: #cccccc;
+      }
+      * { box-sizing: border-box; }
+      html { font-size: 20px; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Verdana, Geneva, "Segoe UI", Tahoma, sans-serif;
+        line-height: 1.5;
+        padding: 1rem;
+      }
+      .wrap { max-width: 46rem; margin: 0 auto; }
+
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: var(--focus);
+        color: #000;
+        font-weight: bold;
+        padding: 0.75rem 1rem;
+        z-index: 10;
+      }
+      .skip-link:focus { left: 0.5rem; top: 0.5rem; }
+
+      .sr-only {
+        position: absolute;
+        width: 1px; height: 1px;
+        margin: -1px; padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      a { color: var(--fair); }
+      a:focus-visible, button:focus-visible, input:focus-visible {
+        outline: 4px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      h1 { font-size: 2rem; line-height: 1.2; margin: 0.5rem 0 0.25rem; }
+      h2 { font-size: 1.5rem; margin: 1.75rem 0 0.5rem; }
+      h3 { font-size: 1.25rem; margin: 1rem 0 0.25rem; }
+      p { margin: 0.5rem 0; }
+
+      .back-link {
+        display: block;
+        border: 3px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font-size: 1.25rem;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: underline;
+        padding: 1rem;
+        margin: 1rem 0 0.5rem;
+        min-height: 3.5rem;
+      }
+      .back-link:hover { background: #1f1f1f; }
+      button.back-link {
+        font: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        width: 100%;
+      }
+      .close-note {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+      }
+
+      .twin-note { font-size: 1.05rem; color: var(--muted); }
+
+      .status {
+        font-size: 1.2rem;
+        font-weight: bold;
+        min-height: 1.8em;
+        margin: 0.5rem 0;
+      }
+
+      .contents { font-size: 1.15rem; margin: 0.5rem 0; padding-left: 1.25rem; }
+      .contents li { padding: 0.3rem 0; }
+
+      form { margin: 0.75rem 0; }
+      fieldset { border: 3px solid var(--border); background: var(--panel); padding: 1rem 1.25rem; margin: 0; }
+      fieldset:disabled { opacity: 0.6; }
+      legend { font-size: 1.2rem; font-weight: bold; padding: 0 0.5rem; }
+      label { display: block; font-size: 1.2rem; font-weight: bold; margin: 0.5rem 0 0.25rem; }
+      .hint { font-size: 1.05rem; color: var(--muted); margin: 0.25rem 0 0.5rem; }
+      input[type="text"] {
+        display: block;
+        width: 100%;
+        min-height: 3.5rem;
+        padding: 0.75rem 1rem;
+        font: inherit;
+        font-size: 1.4rem;
+        color: var(--text);
+        background: #111111;
+        border: 3px solid var(--border);
+        margin: 0.25rem 0 0.75rem;
+      }
+      button.action {
+        display: block;
+        width: 100%;
+        min-height: 3.5rem;
+        margin: 0.75rem 0 0.25rem;
+        padding: 0.9rem 1rem;
+        font: inherit;
+        font-size: 1.35rem;
+        font-weight: bold;
+        color: #000;
+        background: var(--good);
+        border: 3px solid var(--good);
+        cursor: pointer;
+      }
+      button.action:hover { background: #66ff66; }
+      button.action[disabled] { opacity: 0.6; cursor: wait; }
+      button.secondary {
+        display: block;
+        width: 100%;
+        min-height: 3rem;
+        margin: 0.5rem 0;
+        padding: 0.7rem 1rem;
+        font: inherit;
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: var(--text);
+        background: var(--panel);
+        border: 3px solid var(--fair);
+        cursor: pointer;
+      }
+      button.secondary:hover { background: #1f1f1f; }
+      button.inline-show {
+        display: inline-block;
+        width: auto;
+        min-height: 2.75rem;
+        margin: 0.5rem 0 0.25rem;
+        padding: 0.5rem 1rem;
+        font: inherit;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #000;
+        background: var(--good);
+        border: 3px solid var(--good);
+        cursor: pointer;
+      }
+
+      .result {
+        border: 3px solid var(--good);
+        background: var(--panel);
+        padding: 1rem 1.25rem;
+        margin: 0.75rem 0;
+        font-size: 1.2rem;
+      }
+      .result:empty { display: none; }
+      .result-error {
+        border: 3px solid var(--poor);
+        background: var(--panel);
+        padding: 1rem 1.25rem;
+        margin: 0.75rem 0;
+        font-size: 1.2rem;
+      }
+      .result-error:empty { display: none; }
+      .detail-list { list-style: none; margin: 0.5rem 0; padding: 0; font-size: 1.15rem; }
+      .detail-list li { padding: 0.45rem 0; border-bottom: 1px solid #444; }
+      .detail-list li:last-child { border-bottom: none; }
+      .place-list { list-style: none; margin: 0.5rem 0; padding: 0; font-size: 1.15rem; }
+      .place-list li { padding: 0.75rem 0; border-bottom: 1px solid #444; }
+      .place-list li:last-child { border-bottom: none; }
+      .place-name { font-weight: bold; font-size: 1.25rem; }
+
+      .good { color: var(--good); font-weight: bold; }
+      .fair { color: var(--fair); font-weight: bold; }
+
+      .about { font-size: 1.05rem; color: var(--muted); margin-top: 2rem; border-top: 1px solid #444; padding-top: 1rem; }
+      .about a { color: var(--fair); }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#lookup-grid">Skip to the grid square lookup</a>
+    <main class="wrap">
+      <h1>Grid Square Locator</h1>
+
+      <a class="back-link" href="https://m.facebook.com/groups/742838019382868">Back to Visually Inconvenienced Hams on Facebook</a>
+      <p class="twin-note">A companion to the Technician License Class and the group. Type a grid square to find the nearest town, or type a town to find its grid square. Everything runs in your browser. No lookup is ever sent anywhere.</p>
+
+      <p class="status" id="load-status" role="status" aria-live="polite">Loading the place list…</p>
+
+      <nav aria-label="On this page">
+        <ul class="contents">
+          <li><a href="#lookup-grid">Look up a grid square</a></li>
+          <li><a href="#lookup-place">Look up a place</a></li>
+          <li><a href="#how-it-works">How grid squares work</a></li>
+          <li><a href="#about-data">About the data</a></li>
+        </ul>
+      </nav>
+
+      <h2 id="lookup-grid">Look up a grid square</h2>
+      <p>Type a 4-character or 6-character grid square, like FN21 or EN61CN. The page tells you the nearest named place to the centre of that square, how far away it is, and which way.</p>
+      <form id="grid-form">
+        <fieldset id="grid-fieldset" disabled>
+          <legend>Grid square to place</legend>
+          <label for="grid-input">Grid square</label>
+          <p class="hint" id="grid-hint">Two letters, two numbers, and two more letters for the smaller square. Capitals or small letters both work.</p>
+          <input type="text" id="grid-input" name="grid" aria-describedby="grid-hint" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" />
+          <button type="submit" class="action">Find the place</button>
+          <button type="button" class="secondary" id="example-btn">Try an example: EN61CN, Tinley Park, Illinois</button>
+        </fieldset>
+      </form>
+      <div id="grid-result" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
+
+      <h2 id="lookup-place">Look up a place</h2>
+      <p>Type a town or city to find its grid square. If several places share a name, each result shows its own grid square so you can tell them apart.</p>
+      <form id="place-form">
+        <fieldset id="place-fieldset" disabled>
+          <legend>Place to grid square</legend>
+          <label for="place-input">Town or city</label>
+          <p class="hint" id="place-hint">You can add a comma and a state or country to narrow it down, like Springfield, Illinois or London, Canada.</p>
+          <input type="text" id="place-input" name="place" aria-describedby="place-hint" autocomplete="off" spellcheck="false" maxlength="100" />
+          <button type="submit" class="action">Find the grid square</button>
+        </fieldset>
+      </form>
+      <div id="place-result" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
+
+      <h2 id="how-it-works">How grid squares work</h2>
+      <p>A grid square is a short code for a patch of the Earth. Hams use it to say where they are without giving their home address, and to collect squares for awards and contests.</p>
+      <p>The code has 4 or 6 characters. The first two are letters. They name a big field, 20 degrees wide and 10 degrees tall. The next two are numbers. They name a square inside that field, 2 degrees wide and 1 degree tall, about 168 kilometers wide and 111 kilometers tall near Chicago.</p>
+      <p>The last two letters, when there are 6 characters, name a small square inside that square. Near Chicago a small square is about 7 kilometers wide and 5 kilometers tall. Squares get narrower toward the poles, because the lines of longitude meet there, so the same square is wider near the equator and narrower up north.</p>
+      <p>Take EN61CN, the square over Tinley Park, Illinois. E N is the field. 6 1 is the square inside it. C N is the small square. The centre of that small square is at 41.5625 degrees north, 87.7917 degrees west, and the nearest named place to that centre is Tinley Park itself.</p>
+      <p>Grid squares are also called Maidenhead locators, after the town in England where the system was agreed in 1980.</p>
+
+      <h2 id="about-data">About the data</h2>
+      <p>United States places come from the <a href="https://www2.census.gov/geo/docs/maps-data/data/gazetteer/">United States Census Bureau Gazetteer</a>, 2025 edition, public domain. It lists 32,350 places: every incorporated town and city and every census-designated place in the United States.</p>
+      <p>Places outside the United States come from <a href="https://www.geonames.org/">GeoNames</a>, used under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 license</a>. This page lists 7,887 of them: cities of 75,000 people or more, plus every national capital.</p>
+      <p>Three limits to know. First, outside the United States only larger cities are listed, so in a rural area abroad the nearest named place may be a long way off. The page always says how far it is. Second, a town position is a single centre point from the source data, not the town border, so a place next to a square may show as a few kilometers away. Third, in the ocean or near the poles the nearest named place can be very far away indeed.</p>
+      <p>The nearest place is found by measuring from the centre of the square to every place in the list and taking the closest one. The town may not be inside the square. The page says the distance and direction from the centre so that is always clear.</p>
+      <p>Nothing you type leaves your phone or computer. The page loads its place list once from this same site, and every lookup after that happens on your own device.</p>
+
+      <div class="about">
+        <p>Built for Visually Inconvenienced Hams, a Facebook group for blind and visually impaired amateur radio operators.</p>
+        <p><a href="https://m.facebook.com/groups/742838019382868">Back to Visually Inconvenienced Hams on Facebook</a></p>
+      </div>
+    </main>
+
+    <script src="grid.js"></script>
+    <script>
+(function () {
+  "use strict";
+
+  var G = window.GridLocator;
+  var PLACES = null;
+  var PLACE_LIMIT = 10;
+
+  function $(id) { return document.getElementById(id); }
+
+  var loadStatus = $("load-status");
+  var gridFieldset = $("grid-fieldset");
+  var placeFieldset = $("place-fieldset");
+  var gridForm = $("grid-form");
+  var placeForm = $("place-form");
+  var gridInput = $("grid-input");
+  var placeInput = $("place-input");
+  var gridResult = $("grid-result");
+  var placeResult = $("place-result");
+
+  /* Escape text before putting it in the page, so a typed name can never
+   * break the markup. */
+  function esc(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /* A grid shown compactly for sighted readers and spelled out for
+   * screen readers, so the letters and numbers are heard one by one. */
+  function gridHtml(grid) {
+    return '<strong aria-hidden="true">' + esc(grid) + "</strong>"
+      + '<span class="sr-only">' + esc(G.spellGrid(grid)) + "</span>";
+  }
+
+  function showResult(box, html, isError) {
+    box.className = isError ? "result-error" : "result";
+    box.innerHTML = html;
+    box.focus();
+  }
+
+  function showError(box, message) {
+    showResult(box, "<p>" + esc(message) + "</p>", true);
+  }
+
+  function lookupGrid(raw) {
+    if (!PLACES) {
+      showError(gridResult, "The place list is still loading. Please wait a moment and try again.");
+      return;
+    }
+    var parsed = G.parseGrid(raw);
+    if (!parsed.ok) {
+      showError(gridResult, parsed.error);
+      return;
+    }
+    var grid = parsed.grid;
+    var bounds = G.gridToBounds(grid);
+    var size = G.squareSizeKm(bounds);
+    var nearest = G.nearestPlaces(PLACES, bounds.centreLat, bounds.centreLon, 3);
+    var first = nearest[0];
+
+    var html = "<p>Grid square " + gridHtml(grid) + ". ";
+    if (first.direction === "") {
+      html += "The nearest named place is <strong>" + esc(first.label)
+        + "</strong>, right at the centre of the square.</p>";
+    } else {
+      html += "The nearest named place is <strong>" + esc(first.label)
+        + "</strong>, " + esc(G.formatDistance(first.km)) + " "
+        + esc(first.direction) + " of the square centre.</p>";
+    }
+    html += "<p>The town may not be inside the square. This is the nearest named place to the centre of the square.</p>";
+
+    html += '<ul class="detail-list">';
+    html += "<li>Centre: " + esc(G.formatCoords(bounds.centreLat, bounds.centreLon)) + "</li>";
+    html += "<li>South-west corner: " + esc(G.formatCoords(bounds.swLat, bounds.swLon)) + "</li>";
+    html += "<li>North-east corner: " + esc(G.formatCoords(bounds.neLat, bounds.neLon)) + "</li>";
+    html += "<li>Size: about " + esc(G.formatDistance(size.widthKm)) + " wide and "
+      + esc(G.formatDistance(size.heightKm)) + " tall.</li>";
+    if (nearest.length > 1) {
+      var also = [];
+      for (var i = 1; i < nearest.length; i++) {
+        var extra = esc(nearest[i].label) + ", " + esc(G.formatDistance(nearest[i].km));
+        if (nearest[i].direction !== "") extra += " " + esc(nearest[i].direction);
+        also.push(extra);
+      }
+      html += "<li>Also nearby: " + also.join("; ") + ".</li>";
+    }
+    html += "</ul>";
+    if (grid.length === 4) {
+      html += "<p>This is a 4-character square. Type the full 6 characters for a smaller square and a closer place.</p>";
+    }
+    showResult(gridResult, html, false);
+  }
+
+  function lookupPlace(raw) {
+    if (!PLACES) {
+      showError(placeResult, "The place list is still loading. Please wait a moment and try again.");
+      return;
+    }
+    var query = String(raw || "").trim();
+    if (!query) {
+      showError(placeResult, "Type a town or city first.");
+      return;
+    }
+    /* Ask for one more than we show, so we know whether to say there
+     * are more matches. */
+    var matches = G.searchPlaces(PLACES, query, PLACE_LIMIT + 1);
+    if (matches.length === 0) {
+      showError(placeResult, "No place named " + query + " was found. Check the spelling, or try a bigger town nearby. Outside the United States only cities of 75,000 people or more are listed.");
+      return;
+    }
+    var shown = matches.slice(0, PLACE_LIMIT);
+    var html = "<p>" + (matches.length === 1 ? "One place found."
+      : shown.length + " places found.") + "</p>";
+    html += '<ul class="place-list">';
+    for (var i = 0; i < shown.length; i++) {
+      var m = shown[i];
+      var grid6 = G.latLonToGrid(m.lat, m.lon, 6);
+      var grid4 = grid6.slice(0, 4);
+      html += "<li><span class=\"place-name\">" + esc(m.label) + "</span><br />"
+        + "Grid square " + gridHtml(grid6)
+        + " (4-character grid " + gridHtml(grid4) + ").<br />"
+        + "Coordinates " + esc(G.formatCoords(m.lat, m.lon)) + ".<br />"
+        + '<button type="button" class="inline-show" data-grid="' + esc(grid6)
+        + '">Show this square</button></li>';
+    }
+    html += "</ul>";
+    if (matches.length > PLACE_LIMIT) {
+      html += "<p>Showing the first " + PLACE_LIMIT
+        + " matches. Add a state or country after a comma to narrow it down.</p>";
+    }
+    showResult(placeResult, html, false);
+    var buttons = placeResult.querySelectorAll("button.inline-show");
+    for (var b = 0; b < buttons.length; b++) {
+      buttons[b].addEventListener("click", function () {
+        var grid = this.getAttribute("data-grid");
+        gridInput.value = grid;
+        document.getElementById("lookup-grid").scrollIntoView();
+        lookupGrid(grid);
+      });
+    }
+  }
+
+  gridForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    lookupGrid(gridInput.value);
+  });
+
+  placeForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    lookupPlace(placeInput.value);
+  });
+
+  $("example-btn").addEventListener("click", function () {
+    gridInput.value = "EN61CN";
+    lookupGrid("EN61CN");
+  });
+
+  /* ---- Load the place list (same site, no outside service) ------------ */
+  fetch("places.json").then(function (response) {
+    if (!response.ok) throw new Error("places.json returned " + response.status);
+    return response.json();
+  }).then(function (data) {
+    PLACES = data;
+    loadStatus.textContent = "Place list loaded: "
+      + (data.us.length + data.world.length).toLocaleString("en-US")
+      + " places. Both lookups are ready.";
+    gridFieldset.disabled = false;
+    placeFieldset.disabled = false;
+  }).catch(function () {
+    loadStatus.textContent = "The place list did not load. Check your connection, then reload this page.";
+    var retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "secondary";
+    retry.textContent = "Reload this page";
+    retry.addEventListener("click", function () { window.location.reload(); });
+    loadStatus.parentNode.insertBefore(retry, loadStatus.nextSibling);
+  });
+
+  // ---- Close buttons in Facebook's in-app browser ---------------------------
+  // No link form reaches the group from inside Facebook's own browser: the
+  // www address, the mobile address, and the fb:// deep link were each
+  // tested fresh on Gregory's phone and each ended at "Page not found"
+  // (2026-11-15). So inside that browser the back-links become close
+  // buttons instead: window.close() if the browser honours it, and if the
+  // page is still open a second later, a plain instruction to use the X
+  // button at the top left, which returns to the Facebook app. Whether
+  // window.close() works in Facebook's webview is unproven — the button
+  // tells the member what to do either way. Outside that browser the
+  // back-links stay as they are.
+  var FB_WEBVIEW = /FBAN|FBAV|FB_IAB/i.test(navigator.userAgent);
+  if (FB_WEBVIEW) {
+    var backAnchors = document.querySelectorAll('a[href*="facebook.com/groups/742838019382868"]');
+    for (var bi = 0; bi < backAnchors.length; bi++) {
+      (function (anchor) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "back-link";
+        btn.textContent = "Close this page and return to Facebook";
+        var noteShown = false;
+        btn.addEventListener("click", function () {
+          window.close();
+          setTimeout(function () {
+            if (!document.hidden && !noteShown) {
+              noteShown = true;
+              var note = document.createElement("p");
+              note.className = "close-note";
+              note.setAttribute("role", "status");
+              note.textContent = "This browser won't let the page close itself. To go back to Facebook, tap the X button at the top left of the screen.";
+              btn.parentNode.insertBefore(note, btn.nextSibling);
+            }
+          }, 1200);
+        });
+        anchor.parentNode.replaceChild(btn, anchor);
+      })(backAnchors[bi]);
+    }
+  }
+
+  // ---- Back-to-group links (other mobile browsers) ---------------------------
+  // Inside Facebook's own browser the links above are replaced by close
+  // buttons (see the block above), because every link form fails there.
+  // In other mobile browsers (Safari, Chrome), try the native app deep link
+  // fb://group/<id> first — it opens the group in the Facebook app — and
+  // fall back to the plain web address if the app does not open. On desktop
+  // the web address works fine, so the link behaves normally. Without
+  // JavaScript the links are plain web addresses.
+  var GROUP_DEEP_LINK = "fb://group/742838019382868";
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    var groupLinks = document.querySelectorAll('a[href*="facebook.com/groups/742838019382868"]');
+    for (var gi = 0; gi < groupLinks.length; gi++) {
+      groupLinks[gi].addEventListener("click", function (event) {
+        event.preventDefault();
+        var fallbackUrl = this.href;
+        var attemptedAt = Date.now();
+        window.location.href = GROUP_DEEP_LINK;
+        setTimeout(function () {
+          // If the Facebook app opened, this page is hidden or gone; only
+          // fall back when we are still here and visible.
+          if (!document.hidden && Date.now() - attemptedAt < 5000) {
+            window.location.href = fallbackUrl;
+          }
+        }, 1500);
+      });
+    }
+  }
+})();
+    </script>
+  </body>
+</html>
